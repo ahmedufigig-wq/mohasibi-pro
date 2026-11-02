@@ -130,7 +130,7 @@ fun MainShell(page: String, onNavigate: (String) -> Unit, onLogout: () -> Unit) 
             }
             Column(Modifier.weight(1f).fillMaxHeight().padding(12.dp)) {
                 if (page == "الرئيسية") Dashboard()
-                else ModulePage(page)
+                else if (page == "العملاء والديون" || page == "العملاء") DebtModule()\n                else ModulePage(page)
             }
         }
     }
