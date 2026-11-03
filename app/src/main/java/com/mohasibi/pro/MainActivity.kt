@@ -1,7 +1,6 @@
 package com.mohasibi.pro
 
 import android.os.Bundle
-import com.mohasibi.pro.data.MohasibiDatabase
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -30,11 +29,11 @@ private val Canvas = Color(0xFFF3F6FC)
 private val Ink = Color(0xFF17243B)
 
 class MainActivity : ComponentActivity() {
-    private lateinit var localDatabase: MohasibiDatabase
+    private lateinit var localDatabase: CoreDb
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        localDatabase = MohasibiDatabase(applicationContext)
+        localDatabase = CoreDb(applicationContext)
         // Create/open the durable offline SQLite store on first launch.
         localDatabase.writableDatabase
         window.statusBarColor = android.graphics.Color.rgb(7, 27, 58)
@@ -139,6 +138,12 @@ fun MainShell(page: String, onNavigate: (String) -> Unit, onLogout: () -> Unit) 
                 else if (page == "العملاء والديون" || page == "العملاء") DebtModule()
                 else if (page == "المنتجات والمخزون") InventoryModule()
                 else if (page == "نقطة البيع" || page == "المبيعات") SalesModule()
+                else if (page == "الموردون") SuppliersModule()
+                else if (page == "المشتريات") PurchasesModule()
+                else if (page == "المصروفات والإيرادات") ExpensesModule()
+                else if (page == "الصندوق والخزينة") CashModule()
+                else if (page == "التقارير") ReportsModule()
+                else if (page == "النسخ الاحتياطي") BackupModule()
                 else ModulePage(page)
             }
         }
