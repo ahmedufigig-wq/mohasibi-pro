@@ -1,6 +1,7 @@
 package com.mohasibi.pro
 
 import android.os.Bundle
+import com.mohasibi.pro.data.MohasibiDatabase
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -29,8 +30,13 @@ private val Canvas = Color(0xFFF3F6FC)
 private val Ink = Color(0xFF17243B)
 
 class MainActivity : ComponentActivity() {
+    private lateinit var localDatabase: MohasibiDatabase
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        localDatabase = MohasibiDatabase(applicationContext)
+        // Create/open the durable offline SQLite store on first launch.
+        localDatabase.writableDatabase
         window.statusBarColor = android.graphics.Color.rgb(7, 27, 58)
         window.navigationBarColor = android.graphics.Color.rgb(7, 27, 58)
         setContent { MohasibiApp() }
