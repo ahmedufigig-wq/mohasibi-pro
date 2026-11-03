@@ -37,6 +37,53 @@ class CoreDb(context: Context) : SQLiteOpenHelper(context, "mohasibi_core.db", n
         val v = ContentValues().apply { put("name",name); put("barcode",barcode); put("cost",cost); put("price",price); put("quantity",quantity); put("min_quantity",minQuantity) }
         writableDatabase.insertOrThrow("products",null,v)
     }
+
+    fun checkout(lines: List<Pair<Product, Double>>, paid: Double) {
+        require(lines.isNotEmpty()) { "أضف صنفاً واحداً على الأقل" }
+        val total = lines.sumOf { it.first.price * it.second }
+        val costTotal = lines.sumOf { it.first.cost * it.second }
+        require(paid >= 0 && paid <= total) { "المبلغ المدفوع غير صحيح" }
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            lines.forEach { (product, qty) ->
+                val stock = db.rawQuery("SELECT quantity FROM products WHERE id=?", arrayOf(product.id.toString())).use { cur ->
+                    if (cur.moveToFirst()) cur.getDouble(0) else throw IllegalArgumentException("منتج غير موجود")
+                }
+                require(qty > 0 && stock >= qty) { "المخزون غير كافٍ للمنتج: ${product.name}" }
+            }
+            val invoice = "S-" + System.currentTimeMillis()
+            val sale = ContentValues().apply { put("invoice_no",invoice); put("subtotal",total); put("discount",0.0); put("total",total); put("paid",paid) }
+            val saleId = db.insertOrThrow("sales",null,sale)
+            lines.forEach { (product, qty) ->
+                val lineTotal = product.price * qty
+                val item = ContentValues().apply {
+                    put("sale_id",saleId); put("product_id",product.id); put("quantity",qty)
+                    put("unit_price",product.price); put("cost_snapshot",product.cost); put("line_total",lineTotal)
+                }
+                db.insertOrThrow("sale_items",null,item)
+                db.execSQL("UPDATE products SET quantity=quantity-? WHERE id=?", arrayOf(qty,product.id))
+            }
+            if (paid > 0) {
+                val cash = ContentValues().apply { put("kind","IN"); put("source","SALE"); put("reference_id",saleId); put("amount",paid); put("note",invoice) }
+                db.insertOrThrow("cash_transactions",null,cash)
+            }
+            val entryId = db.insertOrThrow("journal_entries",null,ContentValues().apply { put("entry_no","JE-" + invoice); put("description","إثبات مبيعات $invoice") })
+            fun journal(account: String, title: String, debit: Double, credit: Double) {
+                val line = ContentValues().apply { put("entry_id",entryId); put("account_code",account); put("account_name",title); put("debit",debit); put("credit",credit) }
+                db.insertOrThrow("journal_lines",null,line)
+            }
+            if (paid > 0) journal("101","الصندوق",paid,0.0)
+            if (total-paid > 0) journal("103","ذمم العملاء",total-paid,0.0)
+            journal("401","إيرادات المبيعات",0.0,total)
+            if (costTotal > 0) {
+                journal("501","تكلفة البضاعة المباعة",costTotal,0.0)
+                journal("1030","المخزون",0.0,costTotal)
+            }
+            db.setTransactionSuccessful()
+        } finally { db.endTransaction() }
+    }
+
     fun adjustStock(productId: Long, delta: Double) {
         val db = writableDatabase
         db.beginTransaction()
