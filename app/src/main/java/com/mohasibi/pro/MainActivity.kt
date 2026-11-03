@@ -132,6 +132,7 @@ fun MainShell(page: String, onNavigate: (String) -> Unit, onLogout: () -> Unit) 
                 if (page == "الرئيسية") Dashboard()
                 else if (page == "العملاء والديون" || page == "العملاء") DebtModule()
                 else if (page == "المنتجات والمخزون") InventoryModule()
+                else if (page == "نقطة البيع" || page == "المبيعات") SalesModule()
                 else ModulePage(page)
             }
         }
